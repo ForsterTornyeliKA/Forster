@@ -1,0 +1,632 @@
+VISUALIZATION OF DAILY PRECIPITATION DATA FOR A PERIOD OF 10 YEARS (2001-2010) OF COSTA RICA USING PYTHON XARRY.
+import xarray as xr
+import matplotlib.pyplot as plt
+import cartopy.crs as ccrs
+from warnings import filterwarnings
+filterwarnings('ignore')
+from cartopy import crs, feature
+import numpy as np
+
+#cr for Costa Rica
+ds_cr = xr.open_dataset('COSTA-RICA.nc')
+ds_cr = ds_cr.where(ds_cr !=-99)
+ds_cr
+
+dc_cc = ds_cr.precip
+dt_cr=ds_cr.precip.sel(lon=-84.7534,lat=9.7489, method='nearest')
+da_cr = dt_cr.sel(datetime=slice('2001','2010'))
+da_cr
+
+#monthly totals
+mon_totals = da_cr.groupby('datetime.month').sum('datetime')
+mon_totals
+
+#monthly climatology
+mon_clim = da_cr.groupby('datetime.month').mean('datetime')
+mon_clim
+
+#Annual totals
+annual_total = da_cr.groupby('datetime.year').sum('datetime')
+annual_total.plot(color = 'b', marker='*', label='PRECIPITATION')
+barwidth = 0.1
+plt.rcParams['figure.figsize']=[15,8]
+plt.legend(loc='upper right', fontsize=10)
+plt.ylabel('PRECIPITATION (mm/day)', fontsize =20, color='black')
+plt.xlabel('YEARS', fontsize =15, color='black')
+plt.title('ANNUAL TOTAL PRECIPITATION TIMESERIES', fontsize =15, color='black')
+#plt.savefig('Annual_Total_timeseries.png')
+plt.show()
+
+#Annual Average
+annual_mean = da_cr.groupby('datetime.year').mean('datetime')
+annual_mean.plot(color = 'b', marker='*', label='PRECIPITATION')
+barwidth = 0.1
+plt.rcParams['figure.figsize']=[15,6]
+plt.legend(loc='upper right', fontsize=10)
+plt.ylabel('PRECIPITATION (mm/day)', fontsize =20, color='black')
+plt.xlabel('YEARS', fontsize =15, color='black')
+plt.title('ANNUAL MEAN PRECIPITATION TIMESERIES', fontsize =15, color='black')
+#plt.savefig('Annual_Mean_timeseries.png')
+plt.show()
+
+Monthly_RR2 = da_cr.groupby('datetime.month').sum()
+Monthly_RR2
+dry_costa= da_cr.where(dc_cc <1).sel(lon=-83.75,lat=9.75, datetime=slice('2001','2010'))
+dry_costa=dry_costa.where(dry_costa !=-99)
+dry_cmon=dry_costa.groupby('datetime.month').mean('datetime')
+dry_cmon.plot( color='b', marker='*', label='RR<1mm')
+barwidth = 0.3
+plt.rcParams['figure.figsize']=[10,3]
+plt.legend(loc='upper right', fontsize=10)
+plt.ylabel('PRECIPITATION (mm/day)', fontsize =20, color='black')
+plt.xlabel('MONTH', fontsize =15, color='black')
+plt.title('MONTHLY PRECIPITATION(RR<1mm) TIMESERIES', fontsize =15, color='black')
+plt.show()
+
+wet_costa= da_cr.where(dc_cc >=1).sel(lon=-83.75,lat=9.75, datetime=slice('2001','2010'))
+wet_costa=wet_costa.where(wet_costa !=-99)
+wet_cmon=wet_costa.groupby('datetime.month').mean('datetime')
+wet_cmon.to_series().reset_index()
+wet_cmon.plot(marker='*', label='RR>=1mm', color='b')
+barwidth = 0.1
+plt.rcParams['figure.figsize']=[15,7]
+plt.legend(loc='upper right', fontsize=10)
+plt.ylabel('PRECIPITATION (mm/day)', fontsize =20, color='black')
+plt.xlabel('MONTH', fontsize =15, color='black')
+plt.title('MONTHLY PRECIPITATION(RR>=1mm) TIMESERIES', fontsize=15, color='black')
+plt.show()
+
+dry_costa= da_cr.where(dc_cc <1).sel(lon=-83.75,lat=9.75, datetime=slice('2001','2010'))
+dry_costa=dry_costa.where(dry_costa !=-99)
+dry_cmon=dry_costa.groupby('datetime.year').mean('datetime')
+dry_cmon.plot(marker='*', color='b', label='RR<1mm')
+barwidth = 0.1
+plt.rcParams['figure.figsize']=[10,9]
+plt.legend(loc='upper right', fontsize=10)
+plt.ylabel('PRECIPITATION (mm/day)', fontsize =20, color='black')
+plt.xlabel('YEAR', fontsize =15, color='black')
+plt.title('ANNUAL PRECIPITATION(RR<1mm) TIMESERIES', fontsize =15, color='black')
+plt.show()
+
+wet_costa= da_cr.where(dc_cc >=1).sel(lon=-83.75,lat=9.75, datetime=slice('2001','2010'))
+wet_costa=wet_costa.where(wet_costa !=-99)
+wet_cmon=wet_costa.groupby('datetime.year').mean('datetime')
+wet_cmon.to_series().reset_index()
+wet_cmon.plot(marker='*', color='b', label='RR>=1mm')
+barwidth = 0.1
+plt.rcParams['figure.figsize']=[15,8]
+plt.legend(loc='upper right', fontsize=10)
+plt.ylabel('PRECIPITATION (mm/day)', fontsize =20, color='black')
+plt.xlabel('YEAR', fontsize =15, color='black')
+plt.title('ANNUAL PRECIPITATION(RR>=1mm) TIMESERIES', fontsize =15, color='black')
+plt.show()
+
+import matplotlib.colors as mcolors
+
+
+# SPATIAL PLOTS FOR THE NUMBER OF DRY (RR<1mm)----------------ANNUAL--------
+#selecting precipitation <1mm
+Annual_dry_RR= dc_cc.where(dc_cc <1)
+Annual_dry_RR
+Annual_dry=Annual_dry_RR.groupby('datetime.year').mean('datetime')
+Annual_dry
+Year=['2001', '2002', '2003', '2004', '2005', '2006', '2007', '2008', '2009', '2010']   
+fig, axes = plt.subplots(nrows=2, ncols=5, figsize=(15, 7.9), subplot_kw={'projection': ccrs.PlateCarree()})
+ax = axes.flatten()
+for i, v in enumerate(ax):
+     # add features
+    ax[i].add_feature(feature.LAND)
+    ax[i].add_feature(feature.OCEAN)
+    ax[i].add_feature(feature.BORDERS, linewidth=3)
+    ax[i].add_feature(feature.STATES)
+    ax[i].coastlines(resolution='50m')
+    ax[i].set_title(Year[i])
+    ax[i].set_extent ([-85.95,-82.55,7.03,11.22])
+    cmap = plt.get_cmap('viridis')
+    # modify colormap
+    colors = cmap(np.arange(cmap.N))
+    colors[0] = np.array([1.0, 1.0, 1.0, 1.0]) 
+    new_map = mcolors.LinearSegmentedColormap.from_list('viridis', colors)    
+    cs = ax[i].pcolormesh(Annual_dry['lon'], Annual_dry['lat'], Annual_dry[i], cmap=new_map)
+# colorbar
+cbar = fig.add_axes([0.92, 0.12, 0.033, 0.75]) #lbwh
+fig.colorbar(cs, cax=cbar ,orientation='vertical')
+fig.suptitle('ANNUAL DRY PRECIPITATION(RR<1mm)', fontsize='20')
+
+Annual_wet_RR= dc_cc.where(dc_cc >=1)
+Annual_wet_RR
+Annual_wet=Annual_wet_RR.groupby('datetime.year').mean('datetime')
+Annual_wet
+Year=['2001', '2002', '2003', '2004', '2005', '2006', '2007', '2008', '2009', '2010']     
+fig, axes = plt.subplots(nrows=2, ncols=5, figsize=(15, 7.9), subplot_kw={'projection': ccrs.PlateCarree()})
+ax = axes.flatten()
+for i, v in enumerate(ax):
+     # add features
+    ax[i].add_feature(feature.LAND)
+    ax[i].add_feature(feature.OCEAN)
+    ax[i].set_title(Year[i])
+    ax[i].add_feature(feature.BORDERS, linewidth=3)
+    ax[i].add_feature(feature.STATES)
+    ax[i].coastlines(resolution='50m')
+    ax[i].set_extent ([-85.95,-82.55,7.03,11.22])
+    cmap = plt.get_cmap('viridis')
+    # modify colormap
+    colors = cmap(np.arange(cmap.N))
+    colors[0] = np.array([1.0, 1.0, 1.0, 1.0]) 
+    new_map = mcolors.LinearSegmentedColormap.from_list('viridis', colors)
+    cs = ax[i].pcolormesh(Annual_wet['lon'], Annual_wet['lat'], Annual_wet[i], cmap=new_map)
+# colorbar
+cbar = fig.add_axes([0.92, 0.12, 0.033, 0.75]) #lbwh
+fig.colorbar(cs, cax=cbar ,orientation='vertical')
+fig.suptitle('ANNUAL WET PRECIPITATION(RR>=1mm)', fontsize='20')
+
+Monthly_wet_RR= dc_cc.where(dc_cc >=1)
+Monthly_wet_RR
+Monthly_wet=Monthly_wet_RR.groupby('datetime.month').mean('datetime')
+Monthly_wet
+Month = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+fig, axes = plt.subplots(nrows=3, ncols=4, figsize=(15, 7.9), subplot_kw={'projection': ccrs.PlateCarree()})
+ax = axes.flatten()
+for i, v in enumerate(ax):
+     # add features
+    ax[i].add_feature(feature.LAND)
+    ax[i].add_feature(feature.OCEAN)
+    ax[i].set_title(Month[i])
+    ax[i].add_feature(feature.BORDERS, linewidth=3)
+    ax[i].add_feature(feature.STATES)
+    ax[i].coastlines(resolution='50m')    
+    ax[i].set_extent ([-85.95,-82.55,7.03,11.22])
+    cmap = plt.get_cmap('viridis')
+    # modify colormap
+    colors = cmap(np.arange(cmap.N))
+    colors[0] = np.array([1.0, 1.0, 1.0, 1.0]) 
+    new_map = mcolors.LinearSegmentedColormap.from_list('viridis', colors)
+    cs = ax[i].pcolormesh(Monthly_wet['lon'], Monthly_wet['lat'], Monthly_wet[i], cmap=new_map)
+# colorbar
+cbar = fig.add_axes([0.92, 0.12, 0.033, 0.75]) #lbwh
+fig.colorbar(cs, cax=cbar ,orientation='vertical')
+fig.suptitle('MONTHLY WET PRECIPITATION(RR>=1mm)', fontsize='20')
+
+Monthly_dry_RR= dc_cc.where(dc_cc <1)
+Monthly_dry_RR
+Monthly_dry=Annual_dry_RR.groupby('datetime.month').mean('datetime')
+Monthly_dry
+Month = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+fig, axes = plt.subplots(nrows=3, ncols=4, figsize=(15, 7.9), subplot_kw={'projection': ccrs.PlateCarree()})
+ax = axes.flatten()
+for i, v in enumerate(ax):
+     # add features
+    ax[i].add_feature(feature.LAND)
+    ax[i].add_feature(feature.OCEAN)
+    ax[i].set_title(Month[i])
+    ax[i].add_feature(feature.BORDERS, linewidth=3)
+    ax[i].add_feature(feature.STATES)
+    ax[i].coastlines(resolution='50m')    
+    ax[i].set_extent ([-85.95,-82.55,7.03,11.22])    
+    cmap = plt.get_cmap('viridis')
+    # modify colormap
+    colors = cmap(np.arange(cmap.N))
+    colors[0] = np.array([1.0, 1.0, 1.0, 1.0]) 
+    new_map = mcolors.LinearSegmentedColormap.from_list('viridis', colors)
+    cs = ax[i].pcolormesh(Monthly_wet['lon'], Monthly_wet['lat'], Monthly_wet[i], cmap=new_map)
+# colorbar
+cbar = fig.add_axes([0.92, 0.12, 0.033, 0.75]) #lbwh
+fig.colorbar(cs, cax=cbar ,orientation='vertical')
+fig.suptitle('MONTHLY DRY PRECIPITATION(RR<1mm)', fontsize='20')
+
+da_cr
+wet_cmon
+wet_costa= da_cr.where(dc_cc >10).sel(lon=-83.75,lat=9.75, datetime=slice('2001','2010'))
+wet_costa=wet_costa.where(wet_costa !=-99)
+wet_cmon=wet_costa.groupby('datetime.month').mean('datetime')
+wet_cmon.to_series().reset_index()
+wet_cmon.plot(marker='*', color='b', label='RR>10mm')
+plt.legend(loc='upper right', fontsize=10)
+plt.ylabel('PRECIPITATION (mm/day)', fontsize =20, color='black')
+plt.xlabel('MONTH', fontsize =15, color='black')
+plt.title('EXTREME MONTHLY PRECIPITATION (RR>10mm)', fontsize =15, color='black')
+plt.show()
+
+wet_costa= da_cr.where(dc_cc >20).sel(lon=-83.75,lat=9.75, datetime=slice('2001','2010'))
+wet_costa=wet_costa.where(wet_costa !=-99)
+wet_cmon=wet_costa.groupby('datetime.month').mean('datetime')
+wet_cmon.to_series().reset_index()
+wet_cmon.plot(marker='*', color='b', label='RR>20mm')
+plt.legend(loc='upper right', fontsize=10)
+plt.ylabel('PRECIPITATION (mm/day)', fontsize =20, color='black')
+plt.xlabel('MONTH', fontsize =15, color='black')
+plt.title('EXTREME MONTHLY PRECIPITATION (RR>20mm)', fontsize =15, color='black')
+plt.show()
+
+wet_costa= da_cr.where(dc_cc >10).sel(lon=-83.75,lat=9.75, datetime=slice('2001','2010'))
+wet_costa=wet_costa.where(wet_costa !=-99)
+wet_cmon=wet_costa.groupby('datetime.year').mean('datetime')
+wet_cmon.to_series().reset_index()
+wet_cmon.plot(marker='*', color='b', label='RR>10mm')
+plt.legend(loc='upper right', fontsize=10)
+plt.ylabel('PRECIPITATION (mm/day)', fontsize =20, color='black')
+plt.xlabel('YEAR', fontsize =15, color='black')
+plt.title('EXTREME ANNUAL PRECIPITATION (RR>10mm)', fontsize =15, color='black')
+plt.show()
+
+wet_costa= da_cr.where(dc_cc >20).sel(lon=-83.75,lat=9.75, datetime=slice('2001','2010'))
+wet_costa=wet_costa.where(wet_costa !=-99)
+wet_cmon=wet_costa.groupby('datetime.year').mean('datetime')
+wet_cmon.to_series().reset_index()
+wet_cmon.plot(marker='*', color='b', label='RR>20mm')
+plt.legend(loc='upper right', fontsize=10)
+plt.ylabel('PRECIPITATION (mm/day)', fontsize =20, color='black')
+plt.xlabel('YEAR', fontsize =15, color='black')
+plt.title('EXTREME ANNUAL PRECIPITATION TIMESERIES (RR>20mm) ', fontsize =15, color='black')
+plt.show()
+
+Exterme_Annual_wet_RR= dc_cc.where(dc_cc >10)
+Exterme_Annual_wet_RR
+Extreme_Annual_wet=Annual_wet_RR.groupby('datetime.year').mean('datetime')
+Extreme_Annual_wet
+Year=['2001', '2002', '2003', '2004', '2005', '2006', '2007', '2008', '2009', '2010']    
+fig, axes = plt.subplots(nrows=2, ncols=5, figsize=(15, 7.9), subplot_kw={'projection': ccrs.PlateCarree()})
+ax = axes.flatten()
+for i, v in enumerate(ax):
+     # add features
+    ax[i].add_feature(feature.LAND)
+    ax[i].add_feature(feature.OCEAN)
+    ax[i].set_title(Year[i])
+    ax[i].add_feature(feature.BORDERS, linewidth=3)
+    ax[i].add_feature(feature.STATES)
+    ax[i].coastlines(resolution='50m')   
+    ax[i].set_extent ([-85.95,-82.55,7.03,11.22])    
+    cmap = plt.get_cmap('viridis')
+    # modify colormap
+    colors = cmap(np.arange(cmap.N))
+    colors[0] = np.array([1.0, 1.0, 1.0, 1.0]) 
+    new_map = mcolors.LinearSegmentedColormap.from_list('viridis', colors)
+    cs = ax[i].pcolormesh(Extreme_Annual_wet['lon'], Extreme_Annual_wet['lat'], Extreme_Annual_wet[i], cmap=new_map)
+# colorbar
+cbar = fig.add_axes([0.92, 0.12, 0.033, 0.75]) #lbwh
+fig.colorbar(cs, cax=cbar ,orientation='vertical')
+fig.suptitle(' EXTREME ANNUAL WET PRECIPITATION(RR>10mm)', fontsize='20')
+
+Exterme_Annual_wet_RR= dc_cc.where(dc_cc >20)
+Exterme_Annual_wet_RR
+Extreme_Annual_wet=Annual_wet_RR.groupby('datetime.year').mean('datetime')
+Extreme_Annual_wet
+Year=['2001', '2002', '2003', '2004', '2005', '2006', '2007', '2008', '2009', '2010'] 
+fig, axes = plt.subplots(nrows=2, ncols=5, figsize=(15, 7.9), subplot_kw={'projection': ccrs.PlateCarree()})
+ax = axes.flatten()
+for i, v in enumerate(ax):
+     # add features
+    ax[i].add_feature(feature.LAND)
+    ax[i].add_feature(feature.OCEAN)
+    ax[i].set_title(Year[i])
+    ax[i].add_feature(feature.BORDERS, linewidth=3)
+    ax[i].add_feature(feature.STATES)
+    ax[i].coastlines(resolution='50m')
+    ax[i].set_extent ([-85.95,-82.55,7.03,11.22])    
+    cmap = plt.get_cmap('viridis')
+    # modify colormap
+    colors = cmap(np.arange(cmap.N))
+    colors[0] = np.array([1.0, 1.0, 1.0, 1.0]) 
+    new_map = mcolors.LinearSegmentedColormap.from_list('viridis', colors)
+    cs = ax[i].pcolormesh(Extreme_Annual_wet['lon'], Extreme_Annual_wet['lat'], Extreme_Annual_wet[i], cmap=new_map)
+# colorbar
+cbar = fig.add_axes([0.92, 0.12, 0.033, 0.75]) #lbwh
+fig.colorbar(cs, cax=cbar ,orientation='vertical')
+fig.suptitle(' EXTREME ANNUAL WET PRECIPITATION(RR>20mm)', fontsize='20')
+
+Exetrem_wet_cmon_RR= dc_cc.where(dc_cc >10)
+Exetrem_wet_cmon_RR
+Exetrem_wet_cmon=Exetrem_wet_cmon_RR.groupby('datetime.month').mean('datetime')
+Exetrem_wet_cmon
+fig, axes = plt.subplots(nrows=3, ncols=4, figsize=(15, 7.9), subplot_kw={'projection': ccrs.PlateCarree()})
+ax = axes.flatten()
+for i, v in enumerate(ax):
+     # add features
+    ax[i].add_feature(feature.LAND)
+    ax[i].add_feature(feature.OCEAN)
+    ax[i].set_title(Month[i])
+    ax[i].add_feature(feature.BORDERS, linewidth=3)
+    ax[i].add_feature(feature.STATES)
+    ax[i].coastlines(resolution='50m')    
+    ax[i].set_extent ([-85.95,-82.55,7.03,11.22])    
+    cmap = plt.get_cmap('viridis')
+    # modify colormap
+    colors = cmap(np.arange(cmap.N))
+    colors[0] = np.array([1.0, 1.0, 1.0, 1.0]) 
+    new_map = mcolors.LinearSegmentedColormap.from_list('viridis', colors)   
+    cs = ax[i].pcolormesh(Exetrem_wet_cmon['lon'], Exetrem_wet_cmon['lat'], Exetrem_wet_cmon[i], cmap=new_map)
+# colorbar
+cbar = fig.add_axes([0.92, 0.12, 0.033, 0.75]) #lbwh
+fig.colorbar(cs, cax=cbar ,orientation='vertical')
+fig.suptitle('EXTREME MONTHLY WET PRECIPITATION(RR>10mm)', fontsize='20')
+Exetrem_wet_cmon_RR= dc_cc.where(dc_cc >20)
+Exetrem_wet_cmon_RR
+Exetrem_cmon_wet=wet_cmon_RR.groupby('datetime.month').mean('datetime')
+Exetrem_cmon_wet
+Month = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+fig, axes = plt.subplots(nrows=3, ncols=4, figsize=(15, 7.9), subplot_kw={'projection': ccrs.PlateCarree()})
+ax = axes.flatten()
+for i, v in enumerate(ax):
+     # add features
+    ax[i].add_feature(feature.LAND)
+    ax[i].add_feature(feature.OCEAN)
+    ax[i].set_title(Month[i])
+    ax[i].add_feature(feature.BORDERS, linewidth=3)
+    ax[i].add_feature(feature.STATES)
+    ax[i].coastlines(resolution='50m')    
+    ax[i].set_extent ([-85.95,-82.55,7.03,11.22])
+    cmap = plt.get_cmap('viridis')
+    # modify colormap
+    colors = cmap(np.arange(cmap.N))
+    colors[0] = np.array([1.0, 1.0, 1.0, 1.0]) 
+    new_map = mcolors.LinearSegmentedColormap.from_list('viridis', colors)
+    cs = ax[i].pcolormesh(Exetrem_cmon_wet['lon'], Exetrem_cmon_wet['lat'], Exetrem_cmon_wet[i], cmap=new_map)
+# colorbar
+cbar = fig.add_axes([0.92, 0.12, 0.033, 0.75]) #lbwh
+fig.colorbar(cs, cax=cbar ,orientation='vertical')
+fig.suptitle('EXTREME MONTHLY WET PRECIPITATION(RR>20mm)', fontsize='20')
+
+Exetrem_wet_cmon_RR= dc_cc.where(dc_cc >20)
+Exetrem_wet_cmon_RR
+Exetrem_cmon_wet=Extreme_wet_cmon_RR.groupby('datetime.month').mean('datetime')
+Exetrem_cmon_wet
+Month = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+fig, axes = plt.subplots(nrows=3, ncols=4, figsize=(15, 7.9), subplot_kw={'projection': ccrs.PlateCarree()})
+ax = axes.flatten()
+for i, v in enumerate(ax):
+     # add features
+    ax[i].add_feature(feature.LAND)
+    ax[i].add_feature(feature.OCEAN)
+    ax[i].set_title(Month[i])
+    ax[i].add_feature(feature.BORDERS, linewidth=3)
+    ax[i].add_feature(feature.STATES)
+    ax[i].coastlines(resolution='50m')
+    ax[i].set_extent ([-85.95,-82.55,7.03,11.22])   
+    cmap = plt.get_cmap('viridis')
+    # modify colormap
+    colors = cmap(np.arange(cmap.N))
+    colors[0] = np.array([1.0, 1.0, 1.0, 1.0]) 
+    new_map = mcolors.LinearSegmentedColormap.from_list('viridis', colors)    
+    cs = ax[i].pcolormesh(Exetrem_cmon_wet['lon'], Exetrem_cmon_wet['lat'], Exetrem_cmon_wet[i], cmap=new_map)
+# colorbar
+cbar = fig.add_axes([0.92, 0.12, 0.033, 0.75]) #lbwh
+fig.colorbar(cs, cax=cbar ,orientation='vertical')
+fig.suptitle('EXTREME MONTHLY WET PRECIPITATION(RR>20mm)', fontsize='20')
+
+Extrem_wet_cmon_RR= dc_cc.where(dc_cc >10)
+Extrem_wet_cmon_RR
+Extrem_wet_cmon=Extrem_wet_cmon_RR.groupby('datetime.month').mean('datetime')
+Extrem_wet_cmon
+fig, axes = plt.subplots(nrows=3, ncols=4, figsize=(15, 7.9), subplot_kw={'projection': ccrs.PlateCarree()})
+ax = axes.flatten()
+for i, v in enumerate(ax):
+     # add features
+    ax[i].add_feature(feature.LAND)
+    ax[i].add_feature(feature.OCEAN)
+    ax[i].set_title(Month[i])
+    ax[i].add_feature(feature.BORDERS, linewidth=3)
+    ax[i].add_feature(feature.STATES)
+    ax[i].coastlines(resolution='50m')
+    ax[i].set_extent ([-85.95,-82.55,7.03,11.22]) 
+    cmap = plt.get_cmap('viridis')
+    # modify colormap
+    colors = cmap(np.arange(cmap.N))
+    colors[0] = np.array([1.0, 1.0, 1.0, 1.0]) 
+    new_map = mcolors.LinearSegmentedColormap.from_list('viridis', colors)
+    cs = ax[i].pcolormesh(Extrem_wet_cmon['lon'], Extrem_wet_cmon['lat'], Extrem_wet_cmon[i], cmap=new_map)
+# colorbar
+cbar = fig.add_axes([0.92, 0.12, 0.033, 0.75]) #lbwh
+fig.colorbar(cs, cax=cbar ,orientation='vertical')
+fig.suptitle('EXTREME MONTHLY WET PRECIPITATION(RR>10mm)', fontsize='20')
+
+Extrem_wet_cmon_RR= dc_cc.where(dc_cc >20)
+Extrem_wet_cmon_RR
+Extrem_cmon_wet=Extreme_wet_cmon_RR.groupby('datetime.month').mean('datetime')
+Extrem_cmon_wet
+Month = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+fig, axes = plt.subplots(nrows=3, ncols=4, figsize=(15, 7.9), subplot_kw={'projection': ccrs.PlateCarree()})
+ax = axes.flatten()
+for i, v in enumerate(ax):
+     # add features
+    ax[i].add_feature(feature.LAND)
+    ax[i].add_feature(feature.OCEAN)
+    ax[i].set_title(Month[i])
+    ax[i].add_feature(feature.BORDERS, linewidth=3)
+    ax[i].add_feature(feature.STATES)
+    ax[i].coastlines(resolution='50m')    
+    ax[i].set_extent ([-85.95,-82.55,7.03,11.22])    
+    cmap = plt.get_cmap('viridis')
+    # modify colormap
+    colors = cmap(np.arange(cmap.N))
+      colors[0] = np.array([1.0, 1.0, 1.0, 1.0]) 
+    new_map = mcolors.LinearSegmentedColormap.from_list('viridis', colors)    
+    cs = ax[i].pcolormesh(Extrem_cmon_wet['lon'], Extrem_cmon_wet['lat'], Extrem_cmon_wet[i], cmap=new_map)
+# colorbar
+cbar = fig.add_axes([0.92, 0.12, 0.033, 0.75]) #lbwh
+fig.colorbar(cs, cax=cbar ,orientation='vertical')
+fig.suptitle('EXTREME MONTHLY WET PRECIPITATION(RR>20mm)', fontsize='20')
+
+Extreme_wet_cmon_RR= dc_cc.where(dc_cc >20)
+Extreme_wet_cmon_RR
+Extreme_cmon_wet=Extreme_wet_cmon_RR.groupby('datetime.month').mean('datetime')
+Extreme_cmon_wet
+Month = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+fig, axes = plt.subplots(nrows=3, ncols=4, figsize=(15, 7.9), subplot_kw={'projection': ccrs.PlateCarree()})
+ax = axes.flatten()
+for i, v in enumerate(ax):
+     # add features
+    ax[i].add_feature(feature.LAND)
+    ax[i].add_feature(feature.OCEAN)
+    ax[i].set_title(Month[i])
+    ax[i].add_feature(feature.BORDERS, linewidth=3)
+    ax[i].add_feature(feature.STATES)
+    ax[i].coastlines(resolution='50m')   
+    ax[i].set_extent ([-85.95,-82.55,7.03,11.22])    
+    cmap = plt.get_cmap('viridis')
+    # modify colormap
+    colors = cmap(np.arange(cmap.N))
+    colors[0] = np.array([1.0, 1.0, 1.0, 1.0]) 
+    new_map = mcolors.LinearSegmentedColormap.from_list('viridis', colors)   
+    cs = ax[i].pcolormesh(Extreme_cmon_wet['lon'], Extreme_cmon_wet['lat'], Extreme_cmon_wet[i], cmap=new_map)
+# colorbar
+cbar = fig.add_axes([0.92, 0.12, 0.033, 0.75]) #lbwh
+fig.colorbar(cs, cax=cbar ,orientation='vertical')
+fig.suptitle('EXTREME MONTHLY WET PRECIPITATION(RR>20mm)', fontsize='20')
+
+Extreme_wet_cmon_RR= dc_cc.where(dc_cc >20)
+Extreme_wet_cmon_RR
+Extreme_cmon_wet=Extreme_wet_cmon_RR.groupby('datetime.month').mean('datetime')
+Extreme_cmon_wet
+Month = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+fig, axes = plt.subplots(nrows=3, ncols=4, figsize=(15, 7.9), subplot_kw={'projection': ccrs.PlateCarree()})
+ax = axes.flatten()
+for i, v in enumerate(ax):
+     # add features
+    ax[i].add_feature(feature.LAND)
+    ax[i].add_feature(feature.OCEAN)
+    ax[i].set_title(Month[i])
+    ax[i].add_feature(feature.BORDERS, linewidth=3)
+    ax[i].add_feature(feature.STATES)
+    ax[i].coastlines(resolution='50m')
+    ax[i].set_extent ([-85.95,-82.55,7.03,11.22])    
+    cmap = plt.get_cmap('viridis')
+    # modify colormap
+    colors = cmap(np.arange(cmap.N))
+    colors[0] = np.array([1.0, 1.0, 1.0, 1.0]) 
+    new_map = mcolors.LinearSegmentedColormap.from_list('viridis', colors)
+    cs = ax[i].pcolormesh(Extreme_cmon_wet['lon'], Extreme_cmon_wet['lat'], Extreme_cmon_wet[i], cmap=new_map)
+# colorbar
+cbar = fig.add_axes([0.92, 0.12, 0.033, 0.75]) #lbwh
+fig.colorbar(cs, cax=cbar ,orientation='vertical')
+fig.suptitle('EXTREME WET MONTHLY PRECIPITATION(RR>20mm)', fontsize='20')
+
+Extreme_wet_cmon_RR= dc_cc.where(dc_cc >10)
+Extreme_wet_cmon_RR
+Extreme_wet_cmon=Extreme_wet_cmon_RR.groupby('datetime.month').mean('datetime')
+Extreme_wet_cmon
+fig, axes = plt.subplots(nrows=3, ncols=4, figsize=(15, 7.9), subplot_kw={'projection': ccrs.PlateCarree()})
+ax = axes.flatten()
+for i, v in enumerate(ax):
+     # add features
+    ax[i].add_feature(feature.LAND)
+    ax[i].add_feature(feature.OCEAN)
+    ax[i].set_title(Month[i])
+    ax[i].add_feature(feature.BORDERS, linewidth=3)
+    ax[i].add_feature(feature.STATES)
+    ax[i].coastlines(resolution='50m')
+    ax[i].set_extent ([-85.95,-82.55,7.03,11.22])
+    cmap = plt.get_cmap('viridis')
+    # modify colormap
+    colors = cmap(np.arange(cmap.N))
+    colors[0] = np.array([1.0, 1.0, 1.0, 1.0]) 
+    new_map = mcolors.LinearSegmentedColormap.from_list('viridis', colors)
+    cs = ax[i].pcolormesh(Extreme_wet_cmon['lon'], Extreme_wet_cmon['lat'], Extreme_wet_cmon[i], cmap=new_map)
+# colorbar
+cbar = fig.add_axes([0.92, 0.12, 0.033, 0.75]) #lbwh
+fig.colorbar(cs, cax=cbar ,orientation='vertical')
+fig.suptitle('EXTREME WET MONTHLY PRECIPITATION(RR>10mm)', fontsize='20')
+
+Exterme_Annual_wet_RR= dc_cc.where(dc_cc >10)
+Exterme_Annual_wet_RR
+Extreme_Annual_wet=Annual_wet_RR.groupby('datetime.year').mean('datetime')
+Extreme_Annual_wet
+Year=['2001', '2002', '2003', '2004', '2005', '2006', '2007', '2008', '2009', '2010']    
+fig, axes = plt.subplots(nrows=2, ncols=5, figsize=(15, 7.9), subplot_kw={'projection': ccrs.PlateCarree()})
+ax = axes.flatten()
+for i, v in enumerate(ax):
+     # add features
+    ax[i].add_feature(feature.LAND)
+    ax[i].add_feature(feature.OCEAN)
+    ax[i].set_title(Year[i])
+    ax[i].add_feature(feature.BORDERS, linewidth=3)
+    ax[i].add_feature(feature.STATES)
+    ax[i].coastlines(resolution='50m')    
+    ax[i].set_extent ([-85.95,-82.55,7.03,11.22])    
+    cmap = plt.get_cmap('viridis')
+    # modify colormap
+    colors = cmap(np.arange(cmap.N))
+    colors[0] = np.array([1.0, 1.0, 1.0, 1.0]) 
+    new_map = mcolors.LinearSegmentedColormap.from_list('viridis', colors)
+    cs = ax[i].pcolormesh(Extreme_Annual_wet['lon'], Extreme_Annual_wet['lat'], Extreme_Annual_wet[i], cmap=new_map)
+# colorbar
+cbar = fig.add_axes([0.92, 0.12, 0.033, 0.75]) #lbwh
+fig.colorbar(cs, cax=cbar ,orientation='vertical')
+fig.suptitle(' EXTREME WET ANNUAL PRECIPITATION(RR>10mm)', fontsize='20') 
+
+Exterme_Annual_wet_RR= dc_cc.where(dc_cc >20)
+Exterme_Annual_wet_RR
+Extreme_Annual_wet=Annual_wet_RR.groupby('datetime.year').mean('datetime')
+Extreme_Annual_wet
+Year=['2001', '2002', '2003', '2004', '2005', '2006', '2007', '2008', '2009', '2010'] 
+fig, axes = plt.subplots(nrows=2, ncols=5, figsize=(15, 7.9), subplot_kw={'projection': ccrs.PlateCarree()})
+ax = axes.flatten()
+for i, v in enumerate(ax):
+     # add features
+    ax[i].add_feature(feature.LAND)
+    ax[i].add_feature(feature.OCEAN)
+    ax[i].set_title(Year[i])
+    ax[i].add_feature(feature.BORDERS, linewidth=3)
+    ax[i].add_feature(feature.STATES)
+    ax[i].coastlines(resolution='50m')
+    ax[i].set_extent ([-85.95,-82.55,7.03,11.22])
+    cmap = plt.get_cmap('viridis')
+    # modify colormap
+    colors = cmap(np.arange(cmap.N))
+    colors[0] = np.array([1.0, 1.0, 1.0, 1.0]) 
+    new_map = mcolors.LinearSegmentedColormap.from_list('viridis', colors)
+    cs = ax[i].pcolormesh(Extreme_Annual_wet['lon'], Extreme_Annual_wet['lat'], Extreme_Annual_wet[i], cmap=new_map)
+# colorbar
+cbar = fig.add_axes([0.92, 0.12, 0.033, 0.75]) #lbwh
+fig.colorbar(cs, cax=cbar ,orientation='vertical')
+
+fig.suptitle(' EXTREME WET ANNUAL PRECIPITATION(RR>20mm)', fontsize='20')
+Extreme_wet_cmon_RR= dc_cc.where(dc_cc >20)
+Extreme_wet_cmon_RR
+Extreme_cmon_wet=Extreme_wet_cmon_RR.groupby('datetime.month').mean('datetime')
+Extreme_cmon_wet
+Month = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+fig, axes = plt.subplots(nrows=3, ncols=4, figsize=(15, 7.9), subplot_kw={'projection': ccrs.PlateCarree()})
+ax = axes.flatten()
+for i, v in enumerate(ax):
+     # add features
+    ax[i].add_feature(feature.LAND)
+    ax[i].add_feature(feature.OCEAN)
+    ax[i].set_title(Month[i])
+    ax[i].add_feature(feature.BORDERS, linewidth=3)
+    ax[i].add_feature(feature.STATES)
+    ax[i].coastlines(resolution='50m')
+    ax[i].set_extent ([-85.95,-82.55,7.03,11.22])
+    cmap = plt.get_cmap('viridis')
+    # modify colormap
+    colors = cmap(np.arange(cmap.N))
+    colors[0] = np.array([1.0, 1.0, 1.0, 1.0]) 
+  new_map = mcolors.LinearSegmentedColormap.from_list('viridis', colors)
+    cs = ax[i].pcolormesh(Extreme_cmon_wet['lon'], Extreme_cmon_wet['lat'], Extreme_cmon_wet[i], cmap=new_map)
+# colorbar
+cbar = fig.add_axes([0.92, 0.12, 0.033, 0.75]) #lbwh
+fig.colorbar(cs, cax=cbar ,orientation='vertical')
+fig.suptitle('EXTREME WET MONTHLY PRECIPITATION(RR>20mm)', fontsize='20')
+
+annual_mean = da_cr.groupby('datetime.year').mean('datetime')
+annual_mean.plot(color = 'b', marker='*', label='PRECIPITATION')
+barwidth = 0.1
+plt.rcParams['figure.figsize']=[15,8]
+plt.legend(loc='upper right', fontsize=10)
+plt.ylabel('PRECIPITATION (mm/day)', fontsize =20, color='black')
+plt.xlabel('YEARS', fontsize =15, color='black')
+plt.title('ANNUAL MEAN PRECIPITATION TIMESERIES', fontsize =15, color='black')
+#plt.savefig('Annual_Mean_timeseries.png')
+plt.show()
+
+wet_costa= da_cr.where(dc_cc >=1).sel(lon=-83.75,lat=9.75, datetime=slice('2001','2010'))
+wet_costa=wet_costa.where(wet_costa !=-99)
+wet_cmon=wet_costa.groupby('datetime.month').mean('datetime')
+wet_cmon.to_series().reset_index()
+wet_cmon.plot(marker='*', label='RR>=1mm', color='b')
+barwidth = 0.1
+plt.rcParams['figure.figsize']=[15,8]
+plt.legend(loc='upper right', fontsize=10)
+plt.ylabel('PRECIPITATION (mm/day)', fontsize =20, color='black')
+plt.xlabel('MONTH', fontsize =15, color='black')
+plt.title('MONTHLY PRECIPITATION(RR>=1mm) TIMESERIES', fontsize=15, color='black')
+plt.show()
